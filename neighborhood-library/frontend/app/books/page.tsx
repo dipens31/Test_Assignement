@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { booksApi } from "@/lib/api/books";
 import type { Book, BookCreatePayload } from "@/lib/types";
-import BookTable from "@/components/books/BookTable";
 import BookForm from "@/components/books/BookForm";
 import Modal from "@/components/ui/Modal";
 import Alert from "@/components/ui/Alert";

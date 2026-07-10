@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import { loansApi } from "@/lib/api/loans";
 import type { Loan, LoanStatus } from "@/lib/types";
-import LoanTable from "@/components/loans/LoanTable";
 import Alert from "@/components/ui/Alert";
 import { SkeletonTable } from "@/components/ui/Skeleton";
 import clsx from "clsx";
+import { List } from "lucide-react";
+import DataTable, { Column } from "@/components/ui/DataTable";
 
 const STATUSES: { label: string; value: LoanStatus | ""; dot?: string }[] = [
   { label: "All Loans",  value: "" },
@@ -14,6 +15,23 @@ const STATUSES: { label: string; value: LoanStatus | ""; dot?: string }[] = [
   { label: "Returned",   value: "RETURNED",  dot: "bg-slate-400" },
   { label: "Overdue",    value: "OVERDUE",   dot: "bg-red-500"   },
 ];
+
+const STATUS_BADGE: Record<string, string> = {
+  BORROWED: "badge badge-blue",
+  RETURNED: "badge badge-gray",
+  OVERDUE:  "badge badge-red",
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  BORROWED: "Borrowed",
+  RETURNED: "Returned",
+  OVERDUE:  "Overdue",
+};
+
+function fmt(iso: string | null) {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+}
 
 export default function LoansPage() {
   const [loans, setLoans] = useState<Loan[]>([]);
@@ -71,7 +89,32 @@ export default function LoansPage() {
       </div>
 
       {error && <Alert variant="error" message={error} onClose={() => setError("")} />}
-      {loading ? <SkeletonTable rows={6} cols={7} /> : <LoanTable loans={loans} showFine />}
+      {loading ? <SkeletonTable rows={6} cols={7} /> : (
+        <DataTable
+          data={loans}
+          columns={[
+            { key: "member", header: "Member", render: (loan) => <span className="font-semibold text-slate-900">{loan.member?.name ?? "Unknown"}</span> },
+            { key: "book", header: "Book", render: (loan) => <span className="max-w-[200px] truncate block" title={loan.book?.title}>{loan.book?.title ?? "Unknown"}</span> },
+            { key: "status", header: "Status", render: (loan) => (
+              <span className={STATUS_BADGE[loan.status] ?? "badge badge-gray"}>
+                {STATUS_LABEL[loan.status] ?? loan.status}
+              </span>
+            )},
+            { key: "borrowed_at", header: "Borrowed", render: (loan) => <span className="text-slate-500">{fmt(loan.borrowed_at)}</span> },
+            { key: "due_at", header: "Due", render: (loan) => <span className={loan.status === "OVERDUE" ? "text-red-600 font-medium" : "text-slate-500"}>{fmt(loan.due_at)}</span> },
+            { key: "returned_at", header: "Returned", render: (loan) => <span className="text-slate-500">{fmt(loan.returned_at)}</span> },
+            { key: "fine_amount", header: "Fine", render: (loan) => (
+              Number(loan.fine_amount) > 0 ? (
+                <span className="font-semibold text-red-600">${Number(loan.fine_amount).toFixed(2)}</span>
+              ) : (
+                <span className="text-slate-400">—</span>
+              )
+            )},
+          ]}
+          emptyMessage="No loans found"
+          emptyIcon={<List className="w-10 h-10 text-slate-300" />}
+        />
+      )}
 
       {/* Pagination */}
       {totalPages > 1 && (

@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { membersApi } from "@/lib/api/members";
 import type { Member, MemberCreatePayload } from "@/lib/types";
-import MemberTable from "@/components/members/MemberTable";
 import MemberForm from "@/components/members/MemberForm";
 import Modal from "@/components/ui/Modal";
 import Alert from "@/components/ui/Alert";
@@ -11,7 +10,8 @@ import { SkeletonTable } from "@/components/ui/Skeleton";
 import { useToast } from "@/components/ui/Toast";
 import LoanTable from "@/components/loans/LoanTable";
 import type { Loan } from "@/lib/types";
-import { Plus, Search, X } from "lucide-react";
+import { Plus, Search, X, Users, Pencil, List } from "lucide-react";
+import DataTable, { Column, Action } from "@/components/ui/DataTable";
 
 export default function MembersPage() {
   const { toast } = useToast();
@@ -91,7 +91,24 @@ export default function MembersPage() {
       </div>
 
       {error && <Alert variant="error" message={error} onClose={() => setError("")} />}
-      {loading ? <SkeletonTable rows={5} cols={5} /> : <MemberTable members={members} onEdit={setEditMember} onViewLoans={handleViewLoans} />}
+      {loading ? <SkeletonTable rows={5} cols={5} /> : (
+        <DataTable
+          data={members}
+          columns={[
+            { key: "name", header: "Name", render: (member) => <span className="font-semibold text-slate-900">{member.name}</span> },
+            { key: "email", header: "Email", className: "text-slate-600" },
+            { key: "phone", header: "Phone", render: (member) => <span className="text-slate-400">{member.phone ?? "—"}</span> },
+            { key: "address", header: "Address", render: (member) => <span className="text-slate-400 max-w-[200px] truncate" title={member.address ?? ""}>{member.address ?? "—"}</span> },
+          ]}
+          actions={[
+            { label: "Loans", icon: <List className="w-3.5 h-3.5" />, onClick: handleViewLoans, className: "btn-ghost btn-sm inline-flex items-center gap-1" },
+            { label: "Edit", icon: <Pencil className="w-3.5 h-3.5" />, onClick: setEditMember, className: "btn-ghost btn-sm inline-flex items-center gap-1" }
+          ]}
+          emptyMessage="No members found"
+          emptyIcon={<Users className="w-10 h-10 text-slate-300" />}
+          emptyDescription="Register a member to get started."
+        />
+      )}
 
       {/* Pagination */}
       {totalPages > 1 && (

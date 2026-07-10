@@ -199,7 +199,7 @@ Check out a book for a member.
 
 **Errors**
 - `404 Not Found` — Member or book not found
-- `409 Conflict` — No copies available
+- `409 Conflict` — No copies available OR member already has an active loan for this book
 
 ---
 
@@ -266,8 +266,8 @@ All errors follow:
 |---|---|
 | `400` | Bad request (e.g., already returned) |
 | `404` | Resource not found |
-| `409` | Conflict (duplicate ISBN/email, no copies) |
-| `422` | Validation error (Pydantic) |
+| `409` | Conflict (duplicate ISBN/email, no copies, duplicate loan) |
+| `422` | Validation error (Pydantic - e.g., past due date, whitespace-only input) |
 | `500` | Internal server error |
 
 ---

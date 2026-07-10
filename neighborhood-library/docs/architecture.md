@@ -35,7 +35,9 @@ backend/app/
 ├── core/
 │   ├── config.py       # Pydantic Settings (env vars)
 │   ├── database.py     # Engine, Session, get_db()
-│   └── exceptions.py   # HTTP exception subclasses
+│   ├── exceptions.py   # HTTP exception subclasses
+│   ├── logging.py      # Structured logging setup
+│   └── validators.py   # Common validation utilities
 ├── models/
 │   ├── base.py         # TimestampMixin
 │   ├── book.py         # Book ORM model
@@ -43,8 +45,8 @@ backend/app/
 │   └── loan.py         # Loan ORM model + LoanStatus enum
 ├── schemas/
 │   ├── common.py       # PaginatedResponse, ErrorResponse
-│   ├── book.py         # BookCreate/Update/Response
-│   ├── member.py       # MemberCreate/Update/Response
+│   ├── book.py         # BookCreate/Update/Response (with trimming validation)
+│   ├── member.py       # MemberCreate/Update/Response (with trimming validation)
 │   └── loan.py         # BorrowRequest, ReturnRequest, LoanResponse
 ├── repositories/
 │   ├── book_repository.py
@@ -53,7 +55,7 @@ backend/app/
 ├── services/
 │   ├── book_service.py
 │   ├── member_service.py
-│   └── loan_service.py   # Fine calculation, borrow/return logic
+│   └── loan_service.py   # Fine calculation, borrow/return logic, duplicate prevention
 ├── api/v1/
 │   ├── books.py
 │   ├── members.py
@@ -68,7 +70,10 @@ backend/app/
 - **Service layer**: All business logic lives in `services/`. Routers delegate to services and never implement business rules.
 - **Dependency injection**: `get_db()` is injected into every request via FastAPI `Depends()`. Service objects receive the session at construction time.
 - **Row locking**: `SELECT ... FOR UPDATE` on Book rows during borrow to prevent race conditions on `copies_available`.
+- **Duplicate prevention**: Active loan checks prevent members from borrowing the same book twice.
 - **Fine calculation**: Pure function `calculate_fine(due_at, returned_at, rate)` with half-up rounding for exactness.
+- **Logging**: Structured logging with file and console handlers for debugging and monitoring.
+- **Validation**: Centralized validators in `core/validators.py` with schema-level trimming and whitespace-only blocking.
 
 ## Frontend
 
@@ -88,7 +93,7 @@ backend/app/
 ```
 frontend/
 ├── app/                # Next.js App Router pages
-│   ├── layout.tsx      # Root layout (Navbar + footer)
+│   ├── layout.tsx      # Root layout (Navbar + footer + ErrorBoundary)
 │   ├── page.tsx        # Dashboard
 │   ├── books/page.tsx
 │   ├── members/page.tsx
@@ -99,13 +104,14 @@ frontend/
 │       └── overdue/page.tsx
 ├── components/
 │   ├── layout/Navbar.tsx
-│   ├── ui/             # Spinner, Alert, Modal
-│   ├── books/          # BookTable, BookForm
-│   ├── members/        # MemberTable, MemberForm
-│   └── loans/          # LoanTable, BorrowForm, ReturnForm
+│   ├── ui/             # Spinner, Alert, Modal, DataTable, ErrorBoundary
+│   ├── books/          # BookForm
+│   ├── members/        # MemberForm
+│   └── loans/          # BorrowForm, ReturnForm
 ├── lib/
 │   ├── types.ts        # Shared TypeScript domain types
-│   └── api/            # client.ts, books.ts, members.ts, loans.ts
+│   ├── api/            # client.ts, books.ts, members.ts, loans.ts
+│   └── constants.ts    # Centralized API endpoint constants
 └── __tests__/          # Jest test suites
 ```
 

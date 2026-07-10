@@ -68,6 +68,7 @@ class TestBorrowBook:
 
         svc.member_repo.get_by_id.return_value = member
         svc.book_repo.get_by_id_for_update.return_value = book
+        svc.loan_repo.get_active_loan_for_member_book.return_value = None  # No existing active loan
         svc.loan_repo.create.return_value = loan
 
         payload = BorrowRequest(member_id=member.id, book_id=book.id)
@@ -82,6 +83,7 @@ class TestBorrowBook:
         book = make_book(copies_available=5)
         svc.member_repo.get_by_id.return_value = member
         svc.book_repo.get_by_id_for_update.return_value = book
+        svc.loan_repo.get_active_loan_for_member_book.return_value = None  # No existing active loan
         svc.loan_repo.create.return_value = make_loan()
 
         svc.borrow(BorrowRequest(member_id=member.id, book_id=book.id))
@@ -95,6 +97,7 @@ class TestBorrowBook:
     def test_borrow_book_not_found(self, svc):
         svc.member_repo.get_by_id.return_value = make_member()
         svc.book_repo.get_by_id_for_update.return_value = None
+        svc.loan_repo.get_active_loan_for_member_book.return_value = None  # No existing active loan
         with pytest.raises(NotFoundError):
             svc.borrow(BorrowRequest(member_id=uuid.uuid4(), book_id=uuid.uuid4()))
 
@@ -103,6 +106,7 @@ class TestBorrowBook:
         book = make_book(copies_available=0)
         svc.member_repo.get_by_id.return_value = member
         svc.book_repo.get_by_id_for_update.return_value = book
+        svc.loan_repo.get_active_loan_for_member_book.return_value = None  # No existing active loan
         with pytest.raises(ConflictError):
             svc.borrow(BorrowRequest(member_id=member.id, book_id=book.id))
 
@@ -112,6 +116,7 @@ class TestBorrowBook:
         loan = make_loan()
         svc.member_repo.get_by_id.return_value = member
         svc.book_repo.get_by_id_for_update.return_value = book
+        svc.loan_repo.get_active_loan_for_member_book.return_value = None  # No existing active loan
         svc.loan_repo.create.return_value = loan
 
         future = datetime.now(timezone.utc) + timedelta(days=14)
@@ -123,9 +128,10 @@ class TestBorrowBook:
         book = make_book(copies_available=1)
         svc.member_repo.get_by_id.return_value = member
         svc.book_repo.get_by_id_for_update.return_value = book
+        svc.loan_repo.get_active_loan_for_member_book.return_value = None  # No existing active loan
 
         past = datetime.now(timezone.utc) - timedelta(days=1)
-        with pytest.raises(BadRequestError):
+        with pytest.raises(ValueError):  # Pydantic validation raises ValueError
             svc.borrow(BorrowRequest(member_id=member.id, book_id=book.id, due_at=past))
 
 

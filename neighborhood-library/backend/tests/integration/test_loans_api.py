@@ -70,7 +70,7 @@ class TestBorrowBook:
         })
         assert resp.status_code == 404
 
-    def test_borrow_past_due_date_returns_400(self, client, make_book, make_member):
+    def test_borrow_past_due_date_returns_422(self, client, make_book, make_member):
         book = make_book()
         member = make_member()
         past = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
@@ -79,7 +79,7 @@ class TestBorrowBook:
             "book_id": str(book.id),
             "due_at": past,
         })
-        assert resp.status_code == 400
+        assert resp.status_code == 422  # Pydantic validation error
 
     def test_borrow_missing_fields_returns_422(self, client):
         resp = client.post("/api/v1/loans/borrow", json={"member_id": str(uuid.uuid4())})

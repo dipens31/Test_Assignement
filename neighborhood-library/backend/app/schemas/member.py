@@ -4,15 +4,7 @@ from typing import Optional
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
-
-def trim_and_validate_string(value: str) -> str:
-    """Trim whitespace and validate that string is not empty after trimming."""
-    if value is None:
-        return value
-    trimmed = value.strip()
-    if not trimmed:
-        raise ValueError("Field cannot be empty or whitespace only")
-    return trimmed
+from app.core.validators import trim_and_validate_string
 
 
 class MemberCreate(BaseModel):

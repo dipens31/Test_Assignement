@@ -10,8 +10,11 @@ This is a complete library management application featuring:
   - RESTful API for books, members, and loans
   - Automatic overdue fine calculation ($0.50/day)
   - Database migrations via Alembic
-  - Comprehensive test suite (unit + integration)
-  - Demo data seeding (8 books, 5 members, 6 loans)
+  - Comprehensive test suite (88 tests - unit + integration)
+  - Demo data seeding (10 books, 5 members, 6 loans)
+  - Structured logging with file persistence
+  - Duplicate loan prevention with row locking
+  - Schema validation with input trimming
 
 - **Frontend UI** (Next.js 14 + React + TypeScript + Tailwind CSS)
   - Modern, polished design with indigo/violet brand palette
@@ -119,12 +122,14 @@ docker compose down --volumes
 ├── frontend/                  # Next.js 14 (App Router) service
 │   ├── app/                   # Pages and layouts
 │   ├── components/            # Reusable UI components
-│   │   ├── books/             # BookForm, BookTable
-│   │   ├── members/           # MemberForm, MemberTable
-│   │   ├── loans/             # BorrowForm, ReturnForm, LoanTable
+│   │   ├── books/             # BookForm
+│   │   ├── members/           # MemberForm
+│   │   ├── loans/             # BorrowForm, ReturnForm
 │   │   ├── layout/            # Navbar
-│   │   └── ui/                # Toast, Modal, Alert, Skeleton, Spinner
-│   ├── lib/api/               # Typed API client wrappers
+│   │   └── ui/                # Toast, Modal, Alert, Skeleton, Spinner, DataTable, ErrorBoundary
+│   ├── lib/
+│   │   ├── api/               # Typed API client wrappers
+│   │   └── constants.ts      # Centralized API endpoint constants
 │   └── __tests__/             # Jest + React Testing Library tests
 ├── docker/
 │   └── postgres/
@@ -199,7 +204,7 @@ See `.env.example` for all variables.
 ## Demo Data
 
 The seed script creates:
-- **8 Books:** Various programming books (Clean Code, The Pragmatic Programmer, etc.)
+- **10 Books:** Various programming books (Clean Code, The Pragmatic Programmer, etc.)
 - **5 Members:** Sample library members
 - **6 Loans:** Mixed statuses (2 BORROWED, 2 RETURNED, 2 OVERDUE with fines)
 
