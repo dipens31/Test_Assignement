@@ -23,8 +23,11 @@ COPY --from=builder /install /usr/local
 
 COPY . .
 
-RUN adduser --disabled-password --gecos "" appuser \
-    && chown -R appuser:appuser /app
+RUN adduser --disabled-password --gecos "" appuser
+
+# Create logs directory for logging infrastructure
+RUN mkdir -p /app/logs && chown -R appuser:appuser /app
+
 USER appuser
 
 ENV PYTHONUNBUFFERED=1 \

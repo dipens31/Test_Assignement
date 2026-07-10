@@ -61,7 +61,11 @@ export default function BorrowForm({ onSubmit, onSuccess }: BorrowFormProps) {
           autoComplete="off"
           {...register("member_id", {
             required: "Member ID is required",
-            validate: (v) => UUID_RE.test(v.trim()) || "Must be a valid UUID (find it on the Members page)",
+            validate: (v: string) => {
+              const trimmed = v.trim();
+              if (trimmed.length === 0) return "Member ID cannot be empty or whitespace only";
+              return UUID_RE.test(trimmed) || "Must be a valid UUID (find it on the Members page)";
+            },
           })}
         />
         {errors.member_id
@@ -78,7 +82,11 @@ export default function BorrowForm({ onSubmit, onSuccess }: BorrowFormProps) {
           autoComplete="off"
           {...register("book_id", {
             required: "Book ID is required",
-            validate: (v) => UUID_RE.test(v.trim()) || "Must be a valid UUID (find it on the Books page)",
+            validate: (v: string) => {
+              const trimmed = v.trim();
+              if (trimmed.length === 0) return "Book ID cannot be empty or whitespace only";
+              return UUID_RE.test(trimmed) || "Must be a valid UUID (find it on the Books page)";
+            },
           })}
         />
         {errors.book_id

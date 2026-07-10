@@ -9,7 +9,8 @@ import Modal from "@/components/ui/Modal";
 import Alert from "@/components/ui/Alert";
 import { SkeletonTable } from "@/components/ui/Skeleton";
 import { useToast } from "@/components/ui/Toast";
-import { Plus, Search, X } from "lucide-react";
+import { Plus, Search, X, BookOpen, Pencil } from "lucide-react";
+import DataTable, { Column, Action } from "@/components/ui/DataTable";
 
 export default function BooksPage() {
   const { toast } = useToast();
@@ -98,7 +99,29 @@ export default function BooksPage() {
       </div>
 
       {error && <Alert variant="error" message={error} onClose={() => setError("")} />}
-      {loading ? <SkeletonTable rows={6} cols={7} /> : <BookTable books={books} onEdit={setEditBook} />}
+      {loading ? <SkeletonTable rows={6} cols={7} /> : (
+        <DataTable
+          data={books}
+          columns={[
+            { key: "title", header: "Title", render: (book) => <span className="font-semibold text-slate-900 line-clamp-1" title={book.title}>{book.title}</span> },
+            { key: "author", header: "Author", className: "text-slate-600" },
+            { key: "isbn", header: "ISBN", render: (book) => <span className="text-slate-400 font-mono text-xs">{book.isbn ?? "—"}</span> },
+            { key: "published_year", header: "Year", render: (book) => <span className="text-slate-400">{book.published_year ?? "—"}</span> },
+            { key: "copies_total", header: "Total", className: "text-center text-slate-700" },
+            { key: "copies_available", header: "Available", render: (book) => (
+              <span className={book.copies_available > 0 ? "badge badge-green" : "badge badge-red"}>
+                {book.copies_available} / {book.copies_total}
+              </span>
+            )},
+          ]}
+          actions={[
+            { label: "Edit", icon: <Pencil className="w-3.5 h-3.5" />, onClick: setEditBook, className: "btn-ghost btn-sm inline-flex items-center gap-1" }
+          ]}
+          emptyMessage="No books found"
+          emptyIcon={<BookOpen className="w-10 h-10 text-slate-300" />}
+          emptyDescription="Add a book to get started."
+        />
+      )}
 
       {/* Pagination */}
       {totalPages > 1 && (

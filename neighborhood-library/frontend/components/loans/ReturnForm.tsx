@@ -70,7 +70,11 @@ export default function ReturnForm({ onSubmit }: ReturnFormProps) {
           autoComplete="off"
           {...register("loan_id", {
             required: "Loan ID is required",
-            validate: (v) => UUID_RE.test(v.trim()) || "Must be a valid UUID (find it on the Loans page)",
+            validate: (v: string) => {
+              const trimmed = v.trim();
+              if (trimmed.length === 0) return "Loan ID cannot be empty or whitespace only";
+              return UUID_RE.test(trimmed) || "Must be a valid UUID (find it on the Loans page)";
+            },
           })}
         />
         {errors.loan_id
