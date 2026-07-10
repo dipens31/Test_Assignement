@@ -1,0 +1,35 @@
+import uuid
+from datetime import datetime
+from typing import Optional
+
+from pydantic import BaseModel, Field
+
+
+class BookCreate(BaseModel):
+    title: str = Field(..., min_length=1, max_length=500, examples=["The Pragmatic Programmer"])
+    author: str = Field(..., min_length=1, max_length=300, examples=["David Thomas"])
+    isbn: Optional[str] = Field(default=None, max_length=20, examples=["978-0-13-595705-9"])
+    published_year: Optional[int] = Field(default=None, ge=1000, le=9999, examples=[1999])
+    copies_total: int = Field(default=1, ge=1, examples=[3])
+
+
+class BookUpdate(BaseModel):
+    title: Optional[str] = Field(default=None, min_length=1, max_length=500)
+    author: Optional[str] = Field(default=None, min_length=1, max_length=300)
+    isbn: Optional[str] = Field(default=None, max_length=20)
+    published_year: Optional[int] = Field(default=None, ge=1000, le=9999)
+    copies_total: Optional[int] = Field(default=None, ge=1)
+
+
+class BookResponse(BaseModel):
+    id: uuid.UUID
+    title: str
+    author: str
+    isbn: Optional[str]
+    published_year: Optional[int]
+    copies_total: int
+    copies_available: int
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
