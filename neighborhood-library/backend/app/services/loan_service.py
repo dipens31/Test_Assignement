@@ -7,11 +7,14 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.exceptions import BadRequestError, ConflictError, NotFoundError
+from app.core.logging import get_logger
 from app.models.loan import Loan, LoanStatus
 from app.repositories.book_repository import BookRepository
 from app.repositories.loan_repository import LoanRepository
 from app.repositories.member_repository import MemberRepository
 from app.schemas.loan import BorrowRequest, ReturnRequest
+
+logger = get_logger(__name__)
 
 
 def calculate_fine(due_at: datetime, returned_at: datetime, rate_per_day: float) -> Decimal:
@@ -41,16 +44,26 @@ class LoanService:
         self.member_repo = MemberRepository(db)
 
     def borrow(self, payload: BorrowRequest) -> Loan:
+        logger.info(f"Borrowing book - member_id: {payload.member_id}, book_id: {payload.book_id}")
         member = self.member_repo.get_by_id(payload.member_id)
         if not member:
+            logger.warning(f"Member not found with ID: {payload.member_id}")
             raise NotFoundError("Member", str(payload.member_id))
+
+        # Check if member already has an active loan for this book
+        existing_active_loan = self.loan_repo.get_active_loan_for_member_book(payload.member_id, payload.book_id)
+        if existing_active_loan:
+            logger.warning(f"Member {payload.member_id} already has an active loan for book {payload.book_id}")
+            raise ConflictError("Member already has an active loan for this book. Please return it before borrowing again.")
 
         # Lock the book row to prevent concurrent over-borrowing
         book = self.book_repo.get_by_id_for_update(payload.book_id)
         if not book:
+            logger.warning(f"Book not found with ID: {payload.book_id}")
             raise NotFoundError("Book", str(payload.book_id))
 
         if book.copies_available <= 0:
+            logger.warning(f"Book unavailable - no copies left for book_id: {payload.book_id}")
             raise ConflictError("Book currently unavailable — no copies left to borrow.")
 
         # Validate due_at is in the future if provided
@@ -61,6 +74,7 @@ class LoanService:
             if due.tzinfo is None:
                 due = due.replace(tzinfo=timezone.utc)
             if due <= now:
+                logger.warning(f"Invalid due_at - must be future datetime: {payload.due_at}")
                 raise BadRequestError("due_at must be a future datetime.")
 
         book.copies_available -= 1
@@ -71,15 +85,19 @@ class LoanService:
             borrowed_at=datetime.now(timezone.utc),
             due_at=payload.due_at,
         )
+        logger.info(f"Successfully created loan with ID: {loan.id}")
         return loan
 
     def return_book(self, payload: ReturnRequest) -> Loan:
+        logger.info(f"Returning book - loan_id: {payload.loan_id}")
         # Lock the loan row for atomic update
         loan = self.loan_repo.get_by_id_for_update(payload.loan_id)
         if not loan:
+            logger.warning(f"Loan not found with ID: {payload.loan_id}")
             raise NotFoundError("Loan", str(payload.loan_id))
 
         if loan.status == LoanStatus.RETURNED:
+            logger.warning(f"Loan already returned - loan_id: {payload.loan_id}")
             raise BadRequestError("This book has already been returned.")
 
         now = datetime.now(timezone.utc)
@@ -92,9 +110,9 @@ class LoanService:
             if due.tzinfo is None:
                 due = due.replace(tzinfo=timezone.utc)
             if now > due:
-                loan.fine_amount = float(
-                    calculate_fine(due, now, settings.FINE_RATE_PER_DAY)
-                )
+                fine = calculate_fine(due, now, settings.FINE_RATE_PER_DAY)
+                loan.fine_amount = float(fine)
+                logger.info(f"Loan overdue - loan_id: {payload.loan_id}, fine: ${fine}")
                 loan.status = LoanStatus.RETURNED  # still RETURNED, fine recorded
 
         # Release the copy — lock the book row too
@@ -102,12 +120,17 @@ class LoanService:
         if book:
             book.copies_available += 1
 
-        return self.loan_repo.save(loan)
+        returned_loan = self.loan_repo.save(loan)
+        logger.info(f"Successfully returned loan - loan_id: {payload.loan_id}")
+        return returned_loan
 
     def get_loan(self, loan_id: uuid.UUID) -> Loan:
+        logger.info(f"Fetching loan with ID: {loan_id}")
         loan = self.loan_repo.get_by_id(loan_id)
         if not loan:
+            logger.warning(f"Loan not found with ID: {loan_id}")
             raise NotFoundError("Loan", str(loan_id))
+        logger.info(f"Successfully fetched loan with ID: {loan_id}")
         return loan
 
     def list(
@@ -118,24 +141,31 @@ class LoanService:
         book_id: Optional[uuid.UUID] = None,
         status: Optional[LoanStatus] = None,
     ) -> Tuple[int, List[Loan]]:
-        return self.loan_repo.list(
+        logger.info(f"Listing loans with filters - skip: {skip}, limit: {limit}, member_id: {member_id}, book_id: {book_id}, status: {status}")
+        total, items = self.loan_repo.list(
             skip=skip, limit=limit, member_id=member_id, book_id=book_id, status=status
         )
+        logger.info(f"Found {total} loans, returning {len(items)} items")
+        return total, items
 
     def get_member_loans(
         self,
         member_id: uuid.UUID,
         active_only: bool = False,
     ) -> List[Loan]:
+        logger.info(f"Fetching loans for member_id: {member_id}, active_only: {active_only}")
         member = self.member_repo.get_by_id(member_id)
         if not member:
+            logger.warning(f"Member not found with ID: {member_id}")
             raise NotFoundError("Member", str(member_id))
 
         status = LoanStatus.BORROWED if active_only else None
         _, loans = self.loan_repo.list(member_id=member_id, status=status, limit=1000)
+        logger.info(f"Found {len(loans)} loans for member_id: {member_id}")
         return loans
 
     def get_overdue(self) -> List[Loan]:
+        logger.info("Fetching overdue loans")
         now = datetime.now(timezone.utc)
         loans = self.loan_repo.get_overdue(now)
         # Annotate in-memory with current fine estimate (not yet persisted)
@@ -148,4 +178,5 @@ class LoanService:
                 loan.fine_amount = float(
                     calculate_fine(due, now, settings.FINE_RATE_PER_DAY)
                 )
+        logger.info(f"Found {len(loans)} overdue loans")
         return loans

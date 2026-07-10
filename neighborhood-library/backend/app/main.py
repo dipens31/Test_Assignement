@@ -4,6 +4,11 @@ from fastapi.responses import JSONResponse
 
 from app.api.v1 import books, loans, members, members_loans
 from app.core.config import settings
+from app.core.logging import get_logger, setup_logging
+
+# Initialize logging
+setup_logging()
+logger = get_logger(__name__)
 
 app = FastAPI(
     title="Neighborhood Library Service",
@@ -28,6 +33,7 @@ app.add_middleware(
 
 @app.get("/health", tags=["Health"], summary="Health check")
 def health_check():
+    logger.info("Health check endpoint called")
     return {"status": "ok"}
 
 

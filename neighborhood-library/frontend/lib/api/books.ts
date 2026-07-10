@@ -1,12 +1,11 @@
 import { api } from "./client";
+import { API_ENDPOINTS } from "../constants";
 import type {
   Book,
   BookCreatePayload,
   BookUpdatePayload,
   PaginatedResponse,
 } from "../types";
-
-const BASE = "/api/v1/books";
 
 export interface ListBooksParams {
   skip?: number;
@@ -25,18 +24,18 @@ export const booksApi = {
     if (params.author) q.set("author", params.author);
     if (params.available_only) q.set("available_only", "true");
     const qs = q.toString();
-    return api.get<PaginatedResponse<Book>>(`${BASE}${qs ? `?${qs}` : ""}`);
+    return api.get<PaginatedResponse<Book>>(`${API_ENDPOINTS.BOOKS}${qs ? `?${qs}` : ""}`);
   },
 
   get(id: string): Promise<Book> {
-    return api.get<Book>(`${BASE}/${id}`);
+    return api.get<Book>(API_ENDPOINTS.BOOKS_DETAIL(id));
   },
 
   create(payload: BookCreatePayload): Promise<Book> {
-    return api.post<Book>(BASE, payload);
+    return api.post<Book>(API_ENDPOINTS.BOOKS, payload);
   },
 
   update(id: string, payload: BookUpdatePayload): Promise<Book> {
-    return api.put<Book>(`${BASE}/${id}`, payload);
+    return api.put<Book>(API_ENDPOINTS.BOOKS_DETAIL(id), payload);
   },
 };

@@ -2,7 +2,17 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
+
+
+def trim_and_validate_string(value: str) -> str:
+    """Trim whitespace and validate that string is not empty after trimming."""
+    if value is None:
+        return value
+    trimmed = value.strip()
+    if not trimmed:
+        raise ValueError("Field cannot be empty or whitespace only")
+    return trimmed
 
 
 class MemberCreate(BaseModel):
@@ -11,12 +21,26 @@ class MemberCreate(BaseModel):
     phone: Optional[str] = Field(default=None, max_length=50, examples=["+1-555-0100"])
     address: Optional[str] = Field(default=None, max_length=500, examples=["123 Main St, Springfield"])
 
+    @field_validator('name', 'email', 'phone', 'address')
+    @classmethod
+    def validate_strings(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None:
+            return trim_and_validate_string(v)
+        return v
+
 
 class MemberUpdate(BaseModel):
     name: Optional[str] = Field(default=None, min_length=1, max_length=300)
     email: Optional[EmailStr] = None
     phone: Optional[str] = Field(default=None, max_length=50)
     address: Optional[str] = Field(default=None, max_length=500)
+
+    @field_validator('name', 'email', 'phone', 'address')
+    @classmethod
+    def validate_strings(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None:
+            return trim_and_validate_string(v)
+        return v
 
 
 class MemberResponse(BaseModel):

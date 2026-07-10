@@ -1,4 +1,5 @@
 import { api } from "./client";
+import { API_ENDPOINTS } from "../constants";
 import type {
   BorrowPayload,
   Loan,
@@ -6,8 +7,6 @@ import type {
   PaginatedResponse,
   ReturnPayload,
 } from "../types";
-
-const BASE = "/api/v1/loans";
 
 export interface ListLoansParams {
   skip?: number;
@@ -26,22 +25,22 @@ export const loansApi = {
     if (params.book_id) q.set("book_id", params.book_id);
     if (params.status) q.set("status", params.status);
     const qs = q.toString();
-    return api.get<PaginatedResponse<Loan>>(`${BASE}${qs ? `?${qs}` : ""}`);
+    return api.get<PaginatedResponse<Loan>>(`${API_ENDPOINTS.LOANS}${qs ? `?${qs}` : ""}`);
   },
 
   get(id: string): Promise<Loan> {
-    return api.get<Loan>(`${BASE}/${id}`);
+    return api.get<Loan>(API_ENDPOINTS.LOANS_DETAIL(id));
   },
 
   overdue(): Promise<Loan[]> {
-    return api.get<Loan[]>(`${BASE}/overdue`);
+    return api.get<Loan[]>(API_ENDPOINTS.LOANS_OVERDUE);
   },
 
   borrow(payload: BorrowPayload): Promise<Loan> {
-    return api.post<Loan>(`${BASE}/borrow`, payload);
+    return api.post<Loan>(API_ENDPOINTS.LOANS_BORROW, payload);
   },
 
   returnBook(payload: ReturnPayload): Promise<Loan> {
-    return api.post<Loan>(`${BASE}/return`, payload);
+    return api.post<Loan>(API_ENDPOINTS.LOANS_RETURN, payload);
   },
 };

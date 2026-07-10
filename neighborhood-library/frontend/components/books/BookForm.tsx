@@ -41,8 +41,9 @@ export default function BookForm({
     setSubmitting(true);
     try {
       const payload: BookCreatePayload = {
-        ...data,
-        isbn: data.isbn || undefined,
+        title: data.title.trim(),
+        author: data.author.trim(),
+        isbn: data.isbn?.trim() || undefined,
         published_year: data.published_year ? Number(data.published_year) : undefined,
         copies_total: Number(data.copies_total),
       };
@@ -64,7 +65,10 @@ export default function BookForm({
           id="title"
           className={`input ${errors.title ? "input-error" : ""}`}
           placeholder="e.g. The Pragmatic Programmer"
-          {...register("title", { required: "Title is required" })}
+          {...register("title", { 
+            required: "Title is required",
+            validate: (value) => value.trim().length > 0 || "Title cannot be empty or whitespace only"
+          })}
         />
         {errors.title && <p className="field-error">{errors.title.message}</p>}
       </div>
@@ -75,7 +79,10 @@ export default function BookForm({
           id="author"
           className={`input ${errors.author ? "input-error" : ""}`}
           placeholder="e.g. David Thomas, Andrew Hunt"
-          {...register("author", { required: "Author is required" })}
+          {...register("author", { 
+            required: "Author is required",
+            validate: (value: string) => value.trim().length > 0 || "Author cannot be empty or whitespace only"
+          })}
         />
         {errors.author && <p className="field-error">{errors.author.message}</p>}
       </div>

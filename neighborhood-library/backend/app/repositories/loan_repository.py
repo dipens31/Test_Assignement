@@ -4,7 +4,10 @@ from typing import List, Optional, Tuple
 
 from sqlalchemy.orm import Session, joinedload
 
+from app.core.logging import get_logger
 from app.models.loan import Loan, LoanStatus
+
+logger = get_logger(__name__)
 
 
 class LoanRepository:
@@ -18,6 +21,7 @@ class LoanRepository:
         borrowed_at: datetime,
         due_at: Optional[datetime],
     ) -> Loan:
+        logger.debug(f"Creating loan in repository - member_id: {member_id}, book_id: {book_id}")
         loan = Loan(
             member_id=member_id,
             book_id=book_id,
@@ -29,9 +33,11 @@ class LoanRepository:
         self.db.add(loan)
         self.db.commit()
         self.db.refresh(loan)
+        logger.debug(f"Loan created in repository with ID: {loan.id}")
         return loan
 
     def get_by_id(self, loan_id: uuid.UUID) -> Optional[Loan]:
+        logger.debug(f"Fetching loan by ID from repository: {loan_id}")
         return (
             self.db.query(Loan)
             .options(joinedload(Loan.member), joinedload(Loan.book))
@@ -40,11 +46,13 @@ class LoanRepository:
         )
 
     def get_by_id_for_update(self, loan_id: uuid.UUID) -> Optional[Loan]:
+        logger.debug(f"Fetching loan by ID for update from repository: {loan_id}")
         return self.db.query(Loan).filter(Loan.id == loan_id).with_for_update().first()
 
     def get_active_loan_for_member_book(
         self, member_id: uuid.UUID, book_id: uuid.UUID
     ) -> Optional[Loan]:
+        logger.debug(f"Fetching active loan for member_id: {member_id}, book_id: {book_id}")
         return (
             self.db.query(Loan)
             .filter(
@@ -63,6 +71,7 @@ class LoanRepository:
         book_id: Optional[uuid.UUID] = None,
         status: Optional[LoanStatus] = None,
     ) -> Tuple[int, List[Loan]]:
+        logger.debug(f"Listing loans from repository with filters - skip: {skip}, limit: {limit}")
         query = self.db.query(Loan).options(
             joinedload(Loan.member), joinedload(Loan.book)
         )
@@ -79,6 +88,7 @@ class LoanRepository:
         return total, items
 
     def get_overdue(self, now: datetime) -> List[Loan]:
+        logger.debug("Fetching overdue loans from repository")
         return (
             self.db.query(Loan)
             .options(joinedload(Loan.member), joinedload(Loan.book))
@@ -92,6 +102,8 @@ class LoanRepository:
         )
 
     def save(self, loan: Loan) -> Loan:
+        logger.debug(f"Saving loan in repository with ID: {loan.id}")
         self.db.commit()
         self.db.refresh(loan)
+        logger.debug(f"Loan saved in repository with ID: {loan.id}")
         return loan

@@ -3,7 +3,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.models.loan import LoanStatus
 from app.schemas.book import BookResponse
@@ -18,6 +18,17 @@ class BorrowRequest(BaseModel):
         examples=["2025-08-01T00:00:00Z"],
         description="Optional due date for the loan. If omitted the library staff sets it later.",
     )
+
+    @field_validator('due_at')
+    @classmethod
+    def validate_due_at(cls, v: Optional[datetime]) -> Optional[datetime]:
+        if v is not None:
+            now = datetime.now(datetime.now().astimezone().tzinfo)
+            if v.tzinfo is None:
+                v = v.replace(tzinfo=now.tzinfo)
+            if v <= now:
+                raise ValueError("due_at must be a future datetime")
+        return v
 
 
 class ReturnRequest(BaseModel):

@@ -3,7 +3,10 @@ from typing import List, Optional, Tuple
 
 from sqlalchemy.orm import Session
 
+from app.core.logging import get_logger
 from app.models.member import Member
+
+logger = get_logger(__name__)
 
 
 class MemberRepository:
@@ -11,16 +14,20 @@ class MemberRepository:
         self.db = db
 
     def create(self, name: str, email: str, phone: Optional[str], address: Optional[str]) -> Member:
+        logger.debug(f"Creating member in repository - email: {email}")
         member = Member(name=name, email=email, phone=phone, address=address)
         self.db.add(member)
         self.db.commit()
         self.db.refresh(member)
+        logger.debug(f"Member created in repository with ID: {member.id}")
         return member
 
     def get_by_id(self, member_id: uuid.UUID) -> Optional[Member]:
+        logger.debug(f"Fetching member by ID from repository: {member_id}")
         return self.db.query(Member).filter(Member.id == member_id).first()
 
     def get_by_email(self, email: str) -> Optional[Member]:
+        logger.debug(f"Fetching member by email from repository: {email}")
         return self.db.query(Member).filter(Member.email == email).first()
 
     def list(
@@ -30,6 +37,7 @@ class MemberRepository:
         name: Optional[str] = None,
         email: Optional[str] = None,
     ) -> Tuple[int, List[Member]]:
+        logger.debug(f"Listing members from repository with filters - skip: {skip}, limit: {limit}")
         query = self.db.query(Member)
 
         if name:
@@ -42,13 +50,17 @@ class MemberRepository:
         return total, items
 
     def update(self, member: Member, **kwargs) -> Member:
+        logger.debug(f"Updating member in repository with ID: {member.id}")
         for key, value in kwargs.items():
             if value is not None:
                 setattr(member, key, value)
         self.db.commit()
         self.db.refresh(member)
+        logger.debug(f"Member updated in repository with ID: {member.id}")
         return member
 
     def delete(self, member: Member) -> None:
+        logger.debug(f"Deleting member from repository with ID: {member.id}")
         self.db.delete(member)
         self.db.commit()
+        logger.debug(f"Member deleted from repository with ID: {member.id}")

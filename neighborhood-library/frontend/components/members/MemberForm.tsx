@@ -40,9 +40,10 @@ export default function MemberForm({
     setSubmitting(true);
     try {
       await onSubmit({
-        ...data,
-        phone: data.phone || undefined,
-        address: data.address || undefined,
+        name: data.name.trim(),
+        email: data.email.trim(),
+        phone: data.phone?.trim() || undefined,
+        address: data.address?.trim() || undefined,
       });
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "An unexpected error occurred.");
@@ -61,7 +62,10 @@ export default function MemberForm({
           id="name"
           className={`input ${errors.name ? "input-error" : ""}`}
           placeholder="e.g. Alice Johnson"
-          {...register("name", { required: "Name is required" })}
+          {...register("name", { 
+            required: "Name is required",
+            validate: (value: string) => value.trim().length > 0 || "Name cannot be empty or whitespace only"
+          })}
         />
         {errors.name && <p className="field-error">{errors.name.message}</p>}
       </div>
@@ -76,6 +80,7 @@ export default function MemberForm({
           {...register("email", {
             required: "Email is required",
             pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: "Enter a valid email address" },
+            validate: (value: string) => value.trim().length > 0 || "Email cannot be empty or whitespace only"
           })}
         />
         {errors.email && <p className="field-error">{errors.email.message}</p>}

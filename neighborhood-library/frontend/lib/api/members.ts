@@ -1,12 +1,11 @@
 import { api } from "./client";
+import { API_ENDPOINTS } from "../constants";
 import type {
   Member,
   MemberCreatePayload,
   MemberUpdatePayload,
   PaginatedResponse,
 } from "../types";
-
-const BASE = "/api/v1/members";
 
 export interface ListMembersParams {
   skip?: number;
@@ -23,22 +22,22 @@ export const membersApi = {
     if (params.name) q.set("name", params.name);
     if (params.email) q.set("email", params.email);
     const qs = q.toString();
-    return api.get<PaginatedResponse<Member>>(`${BASE}${qs ? `?${qs}` : ""}`);
+    return api.get<PaginatedResponse<Member>>(`${API_ENDPOINTS.MEMBERS}${qs ? `?${qs}` : ""}`);
   },
 
   get(id: string): Promise<Member> {
-    return api.get<Member>(`${BASE}/${id}`);
+    return api.get<Member>(API_ENDPOINTS.MEMBERS_DETAIL(id));
   },
 
   create(payload: MemberCreatePayload): Promise<Member> {
-    return api.post<Member>(BASE, payload);
+    return api.post<Member>(API_ENDPOINTS.MEMBERS, payload);
   },
 
   update(id: string, payload: MemberUpdatePayload): Promise<Member> {
-    return api.put<Member>(`${BASE}/${id}`, payload);
+    return api.put<Member>(API_ENDPOINTS.MEMBERS_DETAIL(id), payload);
   },
 
   loans(id: string, activeOnly = false): Promise<import("../types").Loan[]> {
-    return api.get(`${BASE}/${id}/loans${activeOnly ? "?active_only=true" : ""}`);
+    return api.get(`${API_ENDPOINTS.MEMBERS_LOANS(id)}${activeOnly ? "?active_only=true" : ""}`);
   },
 };
